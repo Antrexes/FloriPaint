@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FLORIPAINT — Mi Panel</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:         #00ADA9;
+      --brand-dark:    #008C89;
+      --brand-light:   #E0F7F7;
+      --surface:       #F4F6FA;
+      --white:         #FFFFFF;
+      --border:        #E2E8F0;
+      --text-primary:  #0F172A;
+      --text-secondary:#64748B;
+      --green:         #16A34A;
+      --green-bg:      #DCFCE7;
+      --amber:         #D97706;
+      --amber-bg:      #FEF3C7;
+      --red:           #DC2626;
+      --red-bg:        #FEE2E2;
+      --slate:         #94A3B8;
+      --slate-bg:      #F1F5F9;
+      --radius:        12px;
+      --shadow:        0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.06);
+      --sidebar-w:     240px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--surface);
+      color: var(--text-primary);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── SIDEBAR ── */
+    aside {
+      width: var(--sidebar-w);
+      background: var(--white);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+
+    .logo-wrap {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+    .logo-img {
+      width: 52px;
+      height: auto;
+      flex-shrink: 0;
+      object-fit: contain;
+    }
+    .logo-text .brand {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--brand);
+      letter-spacing: -.4px;
+      line-height: 1.1;
+    }
+    .logo-text .tagline {
+      font-size: 10px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 2px; }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--slate);
+      padding: 12px 8px 6px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: background .15s, color .15s;
+      text-decoration: none;
+    }
+    .nav-item:hover  { background: var(--brand-light); color: var(--brand); }
+    .nav-item.active { background: var(--brand-light); color: var(--brand); font-weight: 600; }
+    .nav-item .icon  { width: 18px; height: 18px; flex-shrink: 0; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--amber-bg);
+      color: var(--amber);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 20px;
+    }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+    }
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .user-card:hover { background: var(--surface); }
+    .avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--brand);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .user-info .name { font-size: 13px; font-weight: 600; }
+    .user-info .role { font-size: 11px; color: var(--text-secondary); }
+    .role-pill {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--amber-bg);
+      color: var(--amber);
+    }
+
+    /* ── MAIN ── */
+    main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* ── TOPBAR ── */
+    header {
+      height: 64px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+    }
+    .topbar-left { flex: 1; }
+    .topbar-title { font-size: 18px; font-weight: 700; }
+    .topbar-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 1px; }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background .15s, transform .1s;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-primary:hover { background: var(--brand-dark); }
+    .btn-primary-lg {
+      background: var(--brand);
+      color: #fff;
+      padding: 11px 22px;
+      font-size: 14px;
+      border-radius: 10px;
+    }
+    .btn-primary-lg:hover { background: var(--brand-dark); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--surface); }
+    .btn-whatsapp {
+      background: #25D366;
+      color: #fff;
+      border: none;
+    }
+    .btn-whatsapp:hover { background: #1ebe5c; }
+
+    .notif-btn {
+      position: relative;
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .notif-dot {
+      position: absolute;
+      top: 7px; right: 7px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--red);
+      border: 2px solid var(--white);
+    }
+
+    /* ── CONTENT ── */
+    .content { padding: 28px; flex: 1; }
+
+    /* ── WELCOME BANNER ── */
+    .welcome-banner {
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .welcome-banner::after {
+      content: '';
+      position: absolute;
+      right: -40px; top: -40px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.07);
+    }
+    .welcome-banner::before {
+      content: '';
+      position: absolute;
+      right: 60px; bottom: -60px;
+      width: 150px; height: 150px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.05);
+    }
+    .welcome-text .greeting {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .welcome-text .sub {
+      font-size: 13px;
+      color: rgba(255,255,255,.8);
+      margin-top: 4px;
+    }
+    .welcome-cta { display: flex; gap: 10px; flex-shrink: 0; position: relative; z-index: 1; }
+    .btn-white {
+      background: #fff;
+      color: var(--brand);
+      border: none;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-white:hover { opacity: .9; }
+    .btn-white-outline {
+      background: transparent;
+      color: #fff;
+      border: 1.5px solid rgba(255,255,255,.5);
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .btn-white-outline:hover { border-color: #fff; }
+
+    /* ── STATS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border: 1px solid var(--border);
+    }
+    .stat-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+    .stat-label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+    .stat-icon {
+      width: 38px; height: 38px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-icon svg { width: 20px; height: 20px; }
+    .stat-value { font-size: 28px; font-weight: 800; letter-spacing: -1px; line-height: 1; }
+    .stat-footer { display: flex; align-items: center; gap: 6px; font-size: 12px; }
+    .stat-delta {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-weight: 700; padding: 2px 7px; border-radius: 20px;
+    }
+    .delta-up   { background: var(--green-bg); color: var(--green); }
+    .delta-down { background: var(--red-bg);   color: var(--red); }
+    .stat-period { color: var(--text-secondary); }
+
+    /* ── TWO-COL ── */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 0;
+    }
+    .card-title { font-size: 15px; font-weight: 700; }
+    .card-subtitle { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .card-body { padding: 16px 22px 22px; }
+
+    /* ── CHART ── */
+    .chart-wrap { position: relative; height: 200px; }
+
+    /* ── TABLE ── */
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text-secondary);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child  { border-radius: 0 8px 0 0; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
+    tbody tr:last-child  { border-bottom: none; }
+    tbody tr:hover { background: var(--surface); }
+    tbody td { padding: 13px 14px; font-size: 13px; }
+
+    .order-id      { font-weight: 700; color: var(--brand); }
+    .order-concept { color: var(--text-secondary); font-size: 12px; margin-top: 2px; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
+    }
+    .badge::before {
+      content: ''; width: 6px; height: 6px;
+      border-radius: 50%; background: currentColor;
+    }
+    .badge-paid      { background: var(--green-bg); color: var(--green); }
+    .badge-pending   { background: var(--amber-bg); color: var(--amber); }
+    .badge-cancelled { background: var(--red-bg);   color: var(--red);   }
+    .badge-expired   { background: var(--slate-bg); color: var(--slate); }
+
+    .amount { font-weight: 700; font-size: 14px; }
+
+    .action-row { display: flex; gap: 6px; }
+    .icon-btn {
+      width: 30px; height: 30px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--white);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-secondary);
+      transition: background .12s, color .12s;
+    }
+    .icon-btn:hover { background: var(--brand-light); color: var(--brand); border-color: var(--brand); }
+    .icon-btn.wa:hover { background: #e8fdf1; color: #25D366; border-color: #25D366; }
+    .icon-btn svg { width: 14px; height: 14px; }
+
+    /* ── PENDING PANEL ── */
+    .pending-list { display: flex; flex-direction: column; gap: 10px; padding: 16px 22px 22px; }
+    .pending-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      transition: border-color .15s;
+    }
+    .pending-item:hover { border-color: var(--brand); }
+    .pending-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--amber);
+      flex-shrink: 0;
+      box-shadow: 0 0 0 3px var(--amber-bg);
+    }
+    .pending-info { flex: 1; min-width: 0; }
+    .pending-id      { font-size: 13px; font-weight: 700; color: var(--brand); }
+    .pending-client  { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+    .pending-amount  { font-size: 14px; font-weight: 800; }
+    .pending-actions { display: flex; gap: 6px; }
+
+    /* ── SEND MODAL HINT ── */
+    .send-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px dashed var(--border);
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: border-color .15s, color .15s;
+    }
+    .send-chip:hover { border-color: var(--brand); color: var(--brand); }
+    .send-chip svg { width: 13px; height: 13px; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 36px 20px;
+      color: var(--text-secondary);
+    }
+    .empty-state svg { width: 40px; height: 40px; margin-bottom: 10px; opacity: .4; }
+    .empty-state p { font-size: 13px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1200px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .grid-2col  { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      aside { display: none; }
+      main  { margin-left: 0; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .welcome-banner { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ SIDEBAR ══ -->
+<aside>
+  <div class="logo-wrap">
+    <img class="logo-img" src="logo.png" alt="Floripaint" />
+    <div class="logo-text">
+      <div class="brand">FLORIPAINT</div>
+      <div class="tagline">Panel de Gestión de Cobros</div>
+    </div>
+  </div>
+
+  <nav>
+    <span class="nav-section-label">Mi Panel</span>
+
+    <a class="nav-item active" href="#">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Inicio
+    </a>
+
+    <a class="nav-item" href="#">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+      </svg>
+      Mis Órdenes
+      <span class="nav-badge">5</span>
+    </a>
+
+    <a class="nav-item" href="#">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
+        <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
+      </svg>
+      Mis Enlaces
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="avatar">MG</div>
+      <div class="user-info">
+        <div class="name">María García</div>
+        <div class="role">Vendedora</div>
+      </div>
+      <span class="role-pill">VEND</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<main>
+  <header>
+    <div class="topbar-left">
+      <div class="topbar-title">Mi Panel</div>
+      <div class="topbar-subtitle">Lunes, 21 de Abril 2026</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="notif-btn">
+        <div class="notif-dot"></div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 01-3.46 0"/>
+        </svg>
+      </div>
+      <button class="btn btn-primary">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nueva Orden
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- WELCOME BANNER -->
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <div class="greeting">¡Buenos días, María! 👋</div>
+        <div class="sub">Tienes <strong>5 órdenes pendientes</strong> de cobro. Envía los enlaces a tus clientes para agilizar los pagos.</div>
+      </div>
+      <div class="welcome-cta">
+        <button class="btn-white">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Nueva Orden
+        </button>
+        <button class="btn-white-outline">
+          Ver mis pendientes
+        </button>
+      </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="stats-grid">
+
+      <!-- Mis órdenes del mes -->
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-label">Mis Órdenes (Mes)</div>
+          <div class="stat-icon" style="background:#E0F7F7">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#00ADA9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+              <rect x="9" y="3" width="6" height="4" rx="1"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-value">38</div>
+        <div class="stat-footer">
+          <span class="stat-delta delta-up">↑ 6</span>
+          <span class="stat-period">vs mes anterior</span>
+        </div>
+      </div>
+
+      <!-- Pendientes -->
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-label">Mis Pendientes</div>
+          <div class="stat-icon" style="background:#FEF3C7">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-value" style="color:#D97706">5</div>
+        <div class="stat-footer">
+          <span class="stat-delta delta-down">↓ 2</span>
+          <span class="stat-period">desde ayer</span>
+        </div>
+      </div>
+
+      <!-- Mi volumen -->
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-label">Mi Volumen (Mes)</div>
+          <div class="stat-icon" style="background:#DCFCE7">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-value" style="color:#16A34A">$31,750</div>
+        <div class="stat-footer">
+          <span class="stat-delta delta-up">↑ 11.2%</span>
+          <span class="stat-period">vs mes anterior</span>
+        </div>
+      </div>
+
+      <!-- Tasa personal -->
+      <div class="stat-card">
+        <div class="stat-card-header">
+          <div class="stat-label">Mi Tasa de Cobro</div>
+          <div class="stat-icon" style="background:#EDE9FE">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+        </div>
+        <div class="stat-value" style="color:#7C3AED">86.8%</div>
+        <div class="stat-footer">
+          <span class="stat-delta delta-up">↑ 3.4%</span>
+          <span class="stat-period">vs mes anterior</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHART + PENDIENTES -->
+    <div class="grid-2col">
+
+      <!-- Gráfico personal -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Mis Cobros — Abril 2026</div>
+            <div class="card-subtitle">Órdenes pagadas por día</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <canvas id="myChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pendientes de envío -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Pendientes de Envío</div>
+            <div class="card-subtitle">Clientes que aún no recibieron el enlace</div>
+          </div>
+        </div>
+        <div class="pending-list">
+
+          <div class="pending-item">
+            <div class="pending-dot"></div>
+            <div class="pending-info">
+              <div class="pending-id">#ORD-0247</div>
+              <div class="pending-client">Cliente: Construcciones López</div>
+            </div>
+            <div>
+              <div class="pending-amount">$6,800</div>
+            </div>
+            <div class="pending-actions">
+              <button class="icon-btn wa" title="Enviar por WhatsApp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+              </button>
+              <button class="icon-btn" title="Copiar enlace">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="pending-item">
+            <div class="pending-dot"></div>
+            <div class="pending-info">
+              <div class="pending-id">#ORD-0243</div>
+              <div class="pending-client">Cliente: Ferretería El Clavo</div>
+            </div>
+            <div>
+              <div class="pending-amount">$4,200</div>
+            </div>
+            <div class="pending-actions">
+              <button class="icon-btn wa" title="Enviar por WhatsApp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+              </button>
+              <button class="icon-btn" title="Copiar enlace">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="pending-item">
+            <div class="pending-dot"></div>
+            <div class="pending-info">
+              <div class="pending-id">#ORD-0240</div>
+              <div class="pending-client">Cliente: Pinturas del Norte</div>
+            </div>
+            <div>
+              <div class="pending-amount">$9,100</div>
+            </div>
+            <div class="pending-actions">
+              <button class="icon-btn wa" title="Enviar por WhatsApp">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+              </button>
+              <button class="icon-btn" title="Copiar enlace">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- MIS ÓRDENES RECIENTES -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Mis Órdenes Recientes</div>
+          <div class="card-subtitle">Historial de las últimas órdenes que creaste</div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px">Ver todas</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Orden / Factura</th>
+              <th>Cliente</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th>Enviado</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="order-id">#ORD-0248</div>
+                <div class="order-concept">Factura FAC-20240419</div>
+              </td>
+              <td style="font-size:13px;color:var(--text-secondary)">Construc. López</td>
+              <td><span class="amount">$12,500</span></td>
+              <td><span class="badge badge-paid">Pagado</span></td>
+              <td>
+                <span class="send-chip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                  WhatsApp
+                </span>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">Hoy 10:42 am</td>
+              <td>
+                <div class="action-row">
+                  <button class="icon-btn" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="order-id">#ORD-0247</div>
+                <div class="order-concept">Factura FAC-20240417</div>
+              </td>
+              <td style="font-size:13px;color:var(--text-secondary)">Construc. López</td>
+              <td><span class="amount">$6,800</span></td>
+              <td><span class="badge badge-pending">Pendiente</span></td>
+              <td>
+                <span style="font-size:11px;color:var(--slate)">Sin enviar</span>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">Hoy 09:15 am</td>
+              <td>
+                <div class="action-row">
+                  <button class="icon-btn" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button class="icon-btn" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="icon-btn wa" title="Enviar por WhatsApp">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="order-id">#ORD-0246</div>
+                <div class="order-concept">Factura FAC-20240416</div>
+              </td>
+              <td style="font-size:13px;color:var(--text-secondary)">Ferretería El Clavo</td>
+              <td><span class="amount">$3,200</span></td>
+              <td><span class="badge badge-paid">Pagado</span></td>
+              <td>
+                <span class="send-chip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                  WhatsApp
+                </span>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">Ayer 04:30 pm</td>
+              <td>
+                <div class="action-row">
+                  <button class="icon-btn" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="order-id">#ORD-0243</div>
+                <div class="order-concept">Factura FAC-20240414</div>
+              </td>
+              <td style="font-size:13px;color:var(--text-secondary)">Ferretería El Clavo</td>
+              <td><span class="amount">$4,200</span></td>
+              <td><span class="badge badge-pending">Pendiente</span></td>
+              <td>
+                <span style="font-size:11px;color:var(--slate)">Sin enviar</span>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">19 Abr</td>
+              <td>
+                <div class="action-row">
+                  <button class="icon-btn" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                  <button class="icon-btn" title="Editar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  </button>
+                  <button class="icon-btn wa" title="Enviar por WhatsApp">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div class="order-id">#ORD-0240</div>
+                <div class="order-concept">Factura FAC-20240412</div>
+              </td>
+              <td style="font-size:13px;color:var(--text-secondary)">Pinturas del Norte</td>
+              <td><span class="amount">$9,100</span></td>
+              <td><span class="badge badge-expired">Expirado</span></td>
+              <td>
+                <span class="send-chip">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                  Email
+                </span>
+              </td>
+              <td style="font-size:12px;color:var(--text-secondary)">18 Abr</td>
+              <td>
+                <div class="action-row">
+                  <button class="icon-btn" title="Ver detalle">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</main>
+
+<script>
+  const ctx = document.getElementById('myChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['1','3','5','7','9','11','13','15','17','19','21'],
+      datasets: [
+        {
+          label: 'Pagadas',
+          data: [1, 2, 1, 3, 2, 4, 2, 3, 2, 4, 3],
+          backgroundColor: '#00ADA9',
+          borderRadius: 5,
+          borderSkipped: false,
+        },
+        {
+          label: 'Pendientes',
+          data: [0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+          backgroundColor: '#FEF3C7',
+          borderRadius: 5,
+          borderSkipped: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { font: { size: 11 }, boxWidth: 12, color: '#64748B' }
+        },
+        tooltip: {
+          backgroundColor: '#0F172A',
+          titleFont: { size: 12, weight: '600' },
+          bodyFont: { size: 12 },
+          padding: 10,
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 11 } }, stacked: true },
+        y: { grid: { color: '#F1F5F9' }, ticks: { color: '#94A3B8', font: { size: 11 }, stepSize: 1 }, stacked: true }
+      }
+    }
+  });
+</script>
+</body>
+</html>
